@@ -6,6 +6,27 @@
 #include "random.h"
 #include "lfsr113.h"
 
+//Global Variables
+//Invader Position
+typedef struct {
+	bool player1; //Status to track if player 1 or 2 is controlling character
+	uint8_t score;
+	uint16_t x;
+	uint16_t y;
+} player;
+
+player invader = {};
+player king = {};
+
+//Game status, (play/stop)
+bool gameStatus;
+
+//Screen boundaries (const)
+//Screen is 320x240 pixels
+//Should be able to use WIDTH and HEIGHT to access GLCD Screen size
+
+
+
 //Task Regulating the Invader's movement
 void invaderMovement(void *arg) {
 	while(1){
@@ -40,7 +61,7 @@ void invaderMovement(void *arg) {
 void kingMovement(void *arg) {
 	while(1){
 		//Move King up and down right side of screen at constant speed
-		
+
 		//Delay by one second
 		osDelay(1000);
 	}
@@ -79,6 +100,8 @@ void kingShot(void *arg) {
 //Reference code to manipulate GLCD display
 void display(void *arg) {
 	//GLCD Screen Code
+	//Screen is 320x240
+	//Should be able to use WIDTH and HEIGHT to access GLCD Screen size
 	GLCD_Clear(Black);
 	GLCD_SetBackColor(Black);   
 	GLCD_SetTextColor(Green);
@@ -89,6 +112,21 @@ void display(void *arg) {
 	uint32_t number;
 	sprintf(print_msg, "%d", number);
 	GLCD_DisplayString(1, 5, 1, print_msg);
+
+	/*
+	//fi: font size, 0-> 6x8, 1 -> 16x24
+	GLCD_Init(void);
+	GLCD_PutPixel(unsigned int x, unsigned int y);
+	GLCD_SetTextColor(unsigned short color);
+	GLCD_SetBackColor(unsigned short color);
+	GLCD_Clear(unsigned short color);
+	GLCD_DrawChar(unsigned int x,  unsigned int y, unsigned int cw, unsigned int ch, unsigned char *c);
+	GLCD_DisplayChar(unsigned int ln, unsigned int col,unsigned char fi, unsigned char c);
+	GLCD_DisplayString(unsigned int ln, unsigned int col,unsigned char fi, unsigned char *s);
+	GLCD_ClearLn(unsigned int ln, unsigned char fi);
+	GLCD_Bargraph(unsigned int x, unsigned int y,unsigned int w, unsigned int h, unsigned int val);
+	GLCD_Bitmap(unsigned int x, unsigned int y,unsigned int w, unsigned int h, unsigned char *bitmap);
+	*/
 }
 
 int main(void){
