@@ -1,0 +1,144 @@
+<html>
+<body>
+<pre>
+<h1>µVision Build Log</h1>
+<h2>Tool Versions:</h2>
+IDE-Version: µVision V5.24.2.0
+Copyright (C) 2017 ARM Ltd and ARM Germany GmbH. All rights reserved.
+License Information: Eric Praetzel, ECE Dept, LIC=----
+ 
+Tool Versions:
+Toolchain:       MDK-Lite  Version: 5.24.1
+Toolchain Path:  C:\software\Keil_v5\ARM\ARMCC\Bin
+C Compiler:      Armcc.exe V5.06 update 5 (build 528)
+Assembler:       Armasm.exe V5.06 update 5 (build 528)
+Linker/Locator:  ArmLink.exe V5.06 update 5 (build 528)
+Library Manager: ArmAr.exe V5.06 update 5 (build 528)
+Hex Converter:   FromElf.exe V5.06 update 5 (build 528)
+CPU DLL:         SARMCM3.DLL V5.24.1
+Dialog DLL:      DCM.DLL V1.16.0.0
+Target DLL:      UL2CM3.DLL V1.160.3.0
+Dialog DLL:      TCM.DLL V1.32.0.0
+ 
+<h2>Project:</h2>
+N:\MTE241\Lab5\Project5.uvprojx
+Project File Date:  06/26/2019
+
+<h2>Output:</h2>
+*** Using Compiler 'V5.06 update 5 (build 528)', folder: 'C:\software\Keil_v5\ARM\ARMCC\Bin'
+Rebuild target 'Target 1'
+compiling random.c...
+compiling lfsr113.c...
+compiling Retarget.c...
+compiling GLCD_SPI_LPC1700.c...
+assembling irq_cm3.s...
+compiling uart.c...
+compiling main.c...
+main.c(129): warning:  #167-D: argument of type "char *" is incompatible with parameter of type "unsigned char *"
+  		GLCD_DisplayString(1, 5, 1, print_msg);
+main.c(132): warning:  #167-D: argument of type "char *" is incompatible with parameter of type "unsigned char *"
+  		GLCD_DisplayString(1, 13, 1, print_msg);
+main.c(138): warning:  #167-D: argument of type "char *" is incompatible with parameter of type "unsigned char *"
+  		GLCD_DisplayString(2, 5, 1, print_msg);
+main.c(141): warning:  #167-D: argument of type "char *" is incompatible with parameter of type "unsigned char *"
+  		GLCD_DisplayString(2, 13, 1, print_msg);
+main.c(147): warning:  #167-D: argument of type "char *" is incompatible with parameter of type "unsigned char *"
+  		GLCD_DisplayString(3, 5, 1, print_msg);
+main.c(150): warning:  #167-D: argument of type "char *" is incompatible with parameter of type "unsigned char *"
+  		GLCD_DisplayString(3, 13, 1, print_msg);
+main.c(156): warning:  #167-D: argument of type "char *" is incompatible with parameter of type "unsigned char *"
+  		GLCD_DisplayString(5, 5, 1, print_msg);
+main.c(183): warning:  #1-D: last line of file ends without a newline
+  }
+main.c: 8 warnings, 0 errors
+compiling rtx_delay.c...
+compiling rtx_evflags.c...
+compiling rtx_evr.c...
+compiling rtx_lib.c...
+compiling rtx_kernel.c...
+compiling rtx_memory.c...
+compiling rtx_msgqueue.c...
+compiling rtx_mempool.c...
+compiling rtx_system.c...
+compiling rtx_mutex.c...
+compiling rtx_semaphore.c...
+compiling os_systick.c...
+compiling rtx_timer.c...
+assembling startup_LPC17xx.s...
+compiling rtx_thread.c...
+compiling RTX_Config.c...
+compiling system_LPC17xx.c...
+linking...
+Program Size: Code=14440 RO-data=6724 RW-data=6240 ZI-data=8320  
+".\Objects\Project4.axf" - 0 Error(s), 8 Warning(s).
+
+<h2>Software Packages used:</h2>
+
+Package Vendor: ARM
+                http://www.keil.com/pack/ARM.CMSIS.5.3.0.pack
+                ARM.CMSIS.5.3.0
+                CMSIS (Cortex Microcontroller Software Interface Standard)
+   * Component: Keil RTX5 Variant: Source Version: 5.3.0
+   * Component: CORE Version: 5.1.1
+   * Component: RTOS2 Version: 2.1.2
+
+Package Vendor: Keil
+                http://www.keil.com/pack/Keil.LPC1700_DFP.2.4.0.pack
+                Keil.LPC1700_DFP.2.4.0
+                NXP LPC1700 Series Device Support, Drivers and Examples for MCB1700 and LPC1788-32
+   * Component: Startup Version: 1.0.0
+
+<h2>Collection of Component include folders:</h2>
+  .\RTE\CMSIS
+  .\RTE\Device\LPC1768
+  .\RTE\_Target_1
+  C:\software\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include
+  C:\software\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\RTOS2\Include
+  C:\software\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\RTOS2\RTX\Include
+  C:\software\Keil_v5\ARM\PACK\Keil\LPC1700_DFP\2.4.0\Device\Include
+
+<h2>Collection of Component Files used:</h2>
+
+   * Component: Keil::Device:Startup:1.0.0
+      Include file:  Device\Include\LPC17xx.h
+      Include file:  RTE_Driver\Config\RTE_Device.h
+      Source file:   Device\Source\ARM\startup_LPC17xx.s
+      Source file:   Device\Source\system_LPC17xx.c
+
+   * Component: ARM::CMSIS:RTOS2:Keil RTX5:Source:5.3.0
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_thread.c
+      Source file:   CMSIS\RTOS2\RTX\Template\Events.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_timer.c
+      Source file:   CMSIS\RTOS2\RTX\Config\RTX_Config.c
+      Source file:   CMSIS\RTOS2\RTX\Template\Timer.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_semaphore.c
+      Source file:   CMSIS\RTOS2\RTX\Template\Semaphore.c
+      Source file:   CMSIS\RTOS2\RTX\Template\MsgQueue.c
+      Source file:   CMSIS\RTOS2\RTX\Template\Thread.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_delay.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_mutex.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_memory.c
+      Include file:  CMSIS\RTOS2\RTX\Include\rtx_os.h
+      Source file:   CMSIS\RTOS2\RTX\Template\main.c
+      Source file:   CMSIS\RTOS2\RTX\Template\MemPool.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_mempool.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_msgqueue.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_system.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_evflags.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_evr.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_lib.c
+      Source file:   CMSIS\RTOS2\RTX\Template\Mutex.c
+      Include file:  CMSIS\RTOS2\RTX\Config\RTX_Config.h
+      Source file:   CMSIS\RTOS2\RTX\Template\svc_user.c
+      Source file:   CMSIS\RTOS2\RTX\Source\rtx_kernel.c
+      Source file:   CMSIS\RTOS2\RTX\Source\ARM\irq_cm3.s
+      Source file:   CMSIS\RTOS2\Source\os_systick.c
+
+   * Component: ARM::CMSIS:CORE:5.1.1
+
+   * Component: ::CMSIS:RTOS2:2.1.2 (API)
+      Include file:  CMSIS\RTOS2\Include\cmsis_os2.h
+Build Time Elapsed:  00:00:08
+</pre>
+</body>
+</html>

@@ -1,0 +1,28 @@
+--cpu Cortex-M3
+".\objects\glcd_spi_lpc1700.o"
+".\objects\lfsr113.o"
+".\objects\random.o"
+".\objects\retarget.o"
+".\objects\uart.o"
+".\objects\main.o"
+".\objects\irq_cm3.o"
+".\objects\rtx_delay.o"
+".\objects\rtx_evflags.o"
+".\objects\rtx_evr.o"
+".\objects\rtx_kernel.o"
+".\objects\rtx_lib.o"
+".\objects\rtx_memory.o"
+".\objects\rtx_mempool.o"
+".\objects\rtx_msgqueue.o"
+".\objects\rtx_mutex.o"
+".\objects\rtx_semaphore.o"
+".\objects\rtx_system.o"
+".\objects\rtx_thread.o"
+".\objects\rtx_timer.o"
+".\objects\os_systick.o"
+".\objects\rtx_config.o"
+".\objects\startup_lpc17xx.o"
+".\objects\system_lpc17xx.o"
+--library_type=microlib --ro-base 0x00000000 --entry 0x00000000 --rw-base 0x10000000 --entry Reset_Handler --first __Vectors --strict --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list ".\Listings\Project4.map" -o .\Objects\Project4.axf
