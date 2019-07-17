@@ -24,36 +24,49 @@ Player king;
 //Game status, (play/stop)
 uint8_t gameStatus;
 
+//Reload status for King's shooting
+osMutexId_t reloading;
+
 //Screen boundaries => 320x240 pixels
-const uint16_t WIDTH = 320;
-const uint16_t HEIGHT = 240;
+const uint16_t WIDTH = 319;
+const uint16_t HEIGHT = 239;
 
 //Task Regulating the Invader's movement
 void invaderMovement(void *arg) {
 	while(1){
+		//Clear invader's position
+		GLCD_DisplayChar(invader.x, invader.y, 1, graphic);
 
 		//Joystick left
-		if (!(LPC_GPIO1->FIOPIN & (1<<23))) {
-			
+		if (!(LPC_GPIO1->FIOPIN & (1<<23)) && invader.x>0) {
+			invader.x = invader.x-1;
 		}
 		//Joystick Up
-		else if (!(LPC_GPIO1->FIOPIN & (1<<24))) {
-
+		else if (!(LPC_GPIO1->FIOPIN & (1<<24)) && invader.y>0) {
+			invader.y = invader.y-1;
 		}
 		//Joystick Right
-		else if (!(LPC_GPIO1->FIOPIN & (1<<25))) {
-
+		else if (!(LPC_GPIO1->FIOPIN & (1<<25)) && invader.x<WIFTH) {
+			invader.x = invader.x+1;
 		}
 		//Joystick Down
-		else if (!(LPC_GPIO1->FIOPIN & (1<<26))) {
-
+		else if (!(LPC_GPIO1->FIOPIN & (1<<26)) && invader.y<HEIGHT) {
+			invader.y = invader.y+1;
 		}
-		
-		//Check if invader hit right border (game won)
+
+		GLCD_DisplayChar(invader.x, invader.y, 1, 'O');
 
 		//Joystick pressed
 		if (!(LPC_GPIO1->FIOPIN & (1<<20))) {
 
+		}
+
+		osDelay(5);
+
+		//Check if invader hit right border (game won)
+		if(invader.x == WIDTH) {
+			invader.x = 0;
+			invader.y = HEIGHT/2;
 		}
 	}
 }
@@ -70,29 +83,48 @@ void kingMovement(void *arg) {
 
 //Task Regulating the King's reload time
 void kingReload(void *arg) {
+	//LEDs 1, 2, 3 on bits 28, 29, 31 on GPIO1
+	LPC_GPIO1->FIODIR |= 0xB0000000;
+	//LEDs 4, 5, 6, 7, 8 on bits 2, 3, 4, 5, 6 on GPIO2
+	LPC_GPIO2->FIODIR |= 0x0000007C;
+
 	while(1){
-		//LEDs 1, 2, 3 on bits 28, 29, 31 on GPIO1
-		LPC_GPIO1->FIODIR |= 0xB0000000;
-		//LEDs 4, 5, 6, 7, 8 on bits 2, 3, 4, 5, 6 on GPIO2
-		LPC_GPIO2->FIODIR |= 0x0000007C;
-		
+		osMutexAcquire(reloading, osWaitForever);
 		LPC_GPIO1->FIOCLR |= 0xB0000000;
 		LPC_GPIO2->FIOCLR |= 0x0000007C;
 
-		//Turn LED Off
-		LPC_GPIO2->FIOCLR |= (1<<6);
+		for(uint8_t led = 0; led<8; led++) {
+			//Turn LED On GPIO1
+			if(led == 5) {
+				LPC_GPIO2->FIOSET |= (1<<31);
+			}
+			else if(led==6) {
+				LPC_GPIO2->FIOSET |= (1<<29);
+			}
+			else if(led==6) {
+				LPC_GPIO2->FIOSET |= (1<<28);
+			}
 
-		//Turn LED On
-		LPC_GPIO2->FIOSET |= (1<<6);
+			//Turn LED On GPIO2
+			else {
+				LPC_GPIO2->FIOSET |= (1<<6-led);
+			}
+
+			osDelay(200);
+		}
+		osMutexRelease(reloading);
 	}
 }
 
 //Task Regulating the King's shot
 void kingShot(void *arg) {
 	while(1){
+		osMutexAcquire(reloading, osWaitForever);
+
 		//Pushbutton pressed -- shot fired
 		//Also check if reload time is up
 		if(!(LPC_GPIO2->FIOPIN & (1<<10))) {
+			osMutexRelease(reloading);
 		}
 	}
 }
@@ -135,6 +167,9 @@ void display(void *arg) {
 
 int main(void){
 	printf("Start of King of the LCD\n");
+
+	gameStatus = true;
+	reloading = false;
 	
 	invader.player1 = 1;
 	invader.score = 0;
@@ -143,7 +178,7 @@ int main(void){
 	
 	king.player1 = 0;
 	king.score = 0;
-	king.x = WIDTH-1;
+	king.x = WIDTH;
 	king.y = HEIGHT/2;
 	
 	//Start four threads
