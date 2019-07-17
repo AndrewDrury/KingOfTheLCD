@@ -13,8 +13,8 @@
 //Global Variables
 //Invader Position
 struct player {
-	uint8_t player1; //Status to track if player 1 or 2 is controlling character
-	uint8_t score;
+	uint16_t player; //Status to track if player 1 or 2 is controlling character
+	uint16_t score;
 	uint16_t x;
 	uint16_t y;
 };
@@ -34,16 +34,42 @@ osMutexId_t reloading;
 const uint16_t WIDTH_PX = 319;
 const uint16_t HEIGHT_PX = 239;
 
+void switchPlayers() {
+	uint16_t invaderScore = invader.score;
+	king.score = invader.score;
+	invader.score = invaderScore;
+	
+	if(invader.player == 1) {
+		invader.player = 2;
+		king.player = 1;
+	}
+	else {
+		invader.player = 1;
+		king.player = 2;
+	}
+}
+
 //Task Regulating the Invader's movement
 void invaderMovement(void *arg) {
 	char graphic = 'O';
 	
 	while(1){
+		if(invader.player == 1) {
+			GLCD_DisplayString(0, 0, 1, "P1 -");
+		}
+		else {
+			GLCD_DisplayString(0, 0, 1, "P2 -");
+		}
+		
+		char num [8];
+		sprintf(num, "%d", invader.score);
+		GLCD_DisplayString(0, 5, 1, num);
+		
 		//Clear invader's position
 		GLCD_DisplayChar(invader.y, invader.x, 1, ' ');
 
-		//Joystick left
-		if (!(LPC_GPIO1->FIOPIN & (1<<23)) && invader.y>0) {
+		//Joystick Up
+		if (!(LPC_GPIO1->FIOPIN & (1<<23)) && invader.y>1) {
 			invader.y = invader.y-1;
 			graphic = 'U';	
 		}
@@ -77,9 +103,11 @@ void invaderMovement(void *arg) {
 		if(invader.x == MAX_COL_LCD) {
 			GLCD_DisplayChar(invader.y, invader.x, 1, ' ');
 			invader.x = 0;
-			invader.y = MAX_ROW_LCD/2;
+			invader.y = MAX_ROW_LCD/2 + 1;
 			
 			invader.score = invader.score + 1;
+			
+			switchPlayers();
 		}
 	}
 }
@@ -89,12 +117,24 @@ void kingMovement(void *arg) {
 	uint16_t move = -1;
 	
 	//Populate border on right side
-	for(uint8_t border = 0; border <= MAX_ROW_LCD; border++) {
+	for(uint8_t border = 1; border <= MAX_ROW_LCD; border++) {
 		GLCD_DisplayChar(border, MAX_COL_LCD, 1, '|');
 	}
 	
 	while(1) {
-		if(king.y == 0) {
+		if(king.player == 1) {
+			GLCD_DisplayString(0, 12, 1, "P1 -");
+		}
+		else {
+			GLCD_DisplayString(0, 12, 1, "P2 -");
+		}
+		
+		char num [8];
+		sprintf(num, "%d", king.score);
+		GLCD_DisplayString(0, 17, 1, num);
+		
+		
+		if(king.y == 1) {
 			move = 1;
 		}
 		else if(king.y == MAX_ROW_LCD) {
@@ -150,24 +190,39 @@ void kingReload(void *arg) {
 }
 
 void shot(uint16_t y) {
-	printf("SHOT FIRED");
+	printf("SHOT FIRED\n");
 	
 	GLCD_DisplayChar(y, MAX_COL_LCD, 1, '|');
 	
 	for(int16_t position = MAX_COL_LCD-1;position>=0; position--) {
 		
 		//Invader hit
-		if(position == invader.x) {
+		if(position <= invader.x && y == invader.y) {
+			GLCD_DisplayChar(invader.y, invader.x, 1, ' ');
 			invader.x = 0;
-			invader.y = MAX_ROW_LCD/2;
+			invader.y = MAX_ROW_LCD/2 + 1;
 			king.score = king.score + 1;
 		}
 		
 		GLCD_DisplayChar(y, position, 1, '-');
 		osDelay(50);
-		GLCD_DisplayChar(y, position, 1, ' ');
 		
 		printf("%d\n", position);
+	}
+	
+	//Invader hit in after effect of beam
+	if(y == invader.y) {
+			GLCD_DisplayChar(invader.y, invader.x, 1, ' ');
+			invader.x = 0;
+			invader.y = MAX_ROW_LCD/2 + 1;
+			king.score = king.score + 1;
+		
+		switchPlayers();
+	}
+	osDelay(1000);
+	
+	for(int16_t beam = 0; beam < MAX_COL_LCD; beam++) {
+		GLCD_DisplayChar(y, beam, 1, ' ');
 	}
 }
 
@@ -180,13 +235,11 @@ void kingShot(void *arg) {
 		//Also check if reload time is up
 		if(!(LPC_GPIO2->FIOPIN & (1<<10))) {
 			//osMutexRelease(reloading);
-			printf("shooting");
 			shot(king.y);
 		}
-		printf("looping");
+		while(!(LPC_GPIO2->FIOPIN & (1<<10))){}
 	}
 }
-
 
 //Reference code to manipulate GLCD display
 /*void display(void *arg) {
@@ -234,15 +287,15 @@ int main(void){
 	gameStatus = true;
 	reloading = false;
 	
-	invader.player1 = 1;
+	invader.player = 1;
 	invader.score = 0;
 	invader.x = 0;
-	invader.y = MAX_ROW_LCD/2;
+	invader.y = MAX_ROW_LCD/2 + 1;
 	
-	king.player1 = 0;
+	king.player = 2;
 	king.score = 0;
 	king.x = MAX_COL_LCD;
-	king.y = MAX_ROW_LCD/2;
+	king.y = MAX_ROW_LCD/2 + 1;
 	
 	//Start four threads
 	osKernelInitialize();
