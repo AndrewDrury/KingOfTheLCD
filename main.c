@@ -24,9 +24,9 @@ Player king;
 //Game status, (play/stop)
 uint8_t gameStatus;
 
-//Screen boundaries (const)
-//Screen is 320x240 pixels
-//Should be able to use WIDTH and HEIGHT to access GLCD Screen size
+//Screen boundaries => 320x240 pixels
+const uint16_t WIDTH = 320;
+const uint16_t HEIGHT = 240;
 
 //Task Regulating the Invader's movement
 void invaderMovement(void *arg) {
@@ -135,6 +135,16 @@ void display(void *arg) {
 
 int main(void){
 	printf("Start of King of the LCD\n");
+	
+	invader.player1 = 1;
+	invader.score = 0;
+	invader.x = 0;
+	invader.y = HEIGHT/2;
+	
+	king.player1 = 0;
+	king.score = 0;
+	king.x = WIDTH-1;
+	king.y = HEIGHT/2;
 	
 	//Start four threads
 	osKernelInitialize();
