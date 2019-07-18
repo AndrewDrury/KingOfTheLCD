@@ -34,80 +34,102 @@ osMutexId_t reloading;
 const uint16_t WIDTH_PX = 319;
 const uint16_t HEIGHT_PX = 239;
 
-void switchPlayers() {
-	uint16_t invaderScore = invader.score;
-	king.score = invader.score;
-	invader.score = invaderScore;
-	
-	if(invader.player == 1) {
-		invader.player = 2;
-		king.player = 1;
-	}
-	else {
-		invader.player = 1;
-		king.player = 2;
+void switchPlayers(void *arg) {
+	while(1) {
+		if(gameStatus == 0) {
+			GLCD_Clear(Black);
+			
+			printf("Before Switch invader: %d, king: %d\n", invader.score, king.score);
+			uint16_t invaderScore = invader.score;
+			invader.score = king.score;
+			king.score = invaderScore;
+			
+			printf("After Switch invader: %d, king: %d\n", invader.score, king.score);
+			
+			if(invader.player == 1) {
+				invader.player = 2;
+				king.player = 1;
+			}
+			else {
+				invader.player = 1;
+				king.player = 2;
+			}
+			
+			invader.x = 0;
+			invader.y = MAX_ROW_LCD/2 + 1;
+			
+			if(invader.player == 1) {
+				GLCD_DisplayString(0, 0, 1, "P1 -");
+				GLCD_DisplayString(0, 12, 1, "P2 -");
+			}
+			else {
+				GLCD_DisplayString(0, 0, 1, "P2 -");
+				GLCD_DisplayString(0, 12, 1, "P1 -");
+			}
+			
+			char num [8];
+			sprintf(num, "%d", invader.score);
+			GLCD_DisplayString(0, 5, 1, num);
+			sprintf(num, "%d", king.score);
+			GLCD_DisplayString(0, 17, 1, num);
+			
+			//Populate border on right side
+			for(uint8_t border = 1; border <= MAX_ROW_LCD; border++) {
+				GLCD_DisplayChar(border, MAX_COL_LCD, 1, '|');
+			}
+			osDelay(1000);
+			gameStatus = 1;
+			printf("Reached -- \n");
+		}
 	}
 }
 
 //Task Regulating the Invader's movement
 void invaderMovement(void *arg) {
 	char graphic = 'O';
+	//initialize player scores
+	gameStatus = 0;
 	
 	while(1){
-		if(invader.player == 1) {
-			GLCD_DisplayString(0, 0, 1, "P1 -");
-		}
-		else {
-			GLCD_DisplayString(0, 0, 1, "P2 -");
-		}
-		
-		char num [8];
-		sprintf(num, "%d", invader.score);
-		GLCD_DisplayString(0, 5, 1, num);
-		
-		//Clear invader's position
-		GLCD_DisplayChar(invader.y, invader.x, 1, ' ');
-
-		//Joystick Up
-		if (!(LPC_GPIO1->FIOPIN & (1<<23)) && invader.y>1) {
-			invader.y = invader.y-1;
-			graphic = 'U';	
-		}
-		//Joystick Right
-		else if (!(LPC_GPIO1->FIOPIN & (1<<24)) && invader.x<MAX_COL_LCD) {
-			invader.x = invader.x+1;
-			graphic = 'R';			
-		}
-		//Joystick Down
-		else if (!(LPC_GPIO1->FIOPIN & (1<<25)) && invader.y<MAX_ROW_LCD) {
-			invader.y = invader.y+1;
-			graphic = 'D';
-			
-		}
-		//Joystick Left
-		else if (!(LPC_GPIO1->FIOPIN & (1<<26)) && invader.x>0) {
-			invader.x = invader.x-1;
-			graphic = 'L';
-		}
-
-		GLCD_DisplayChar(invader.y, invader.x, 1, graphic);
-
-		//Joystick pressed
-		if (!(LPC_GPIO1->FIOPIN & (1<<20))) {
-
-		}
-
-		osDelay(100);
-
-		//Check if invader hit right border (game won)
-		if(invader.x == MAX_COL_LCD) {
+		while(gameStatus) {
+			//Clear invader's position
 			GLCD_DisplayChar(invader.y, invader.x, 1, ' ');
-			invader.x = 0;
-			invader.y = MAX_ROW_LCD/2 + 1;
-			
-			invader.score = invader.score + 1;
-			
-			switchPlayers();
+
+			//Joystick Up
+			if (!(LPC_GPIO1->FIOPIN & (1<<23)) && invader.y>1) {
+				invader.y = invader.y-1;
+			}
+			//Joystick Right
+			else if (!(LPC_GPIO1->FIOPIN & (1<<24)) && invader.x<MAX_COL_LCD) {
+				invader.x = invader.x+1;	
+			}
+			//Joystick Down
+			else if (!(LPC_GPIO1->FIOPIN & (1<<25)) && invader.y<MAX_ROW_LCD) {
+				invader.y = invader.y+1;
+				
+			}
+			//Joystick Left
+			else if (!(LPC_GPIO1->FIOPIN & (1<<26)) && invader.x>0) {
+				invader.x = invader.x-1;
+			}
+
+			GLCD_DisplayChar(invader.y, invader.x, 1, graphic);
+
+			//Joystick pressed
+			if (!(LPC_GPIO1->FIOPIN & (1<<20))) {
+
+			}
+
+			osDelay(100);
+
+			//Check if invader hit right border (game won)
+			if(invader.x == MAX_COL_LCD) {
+				GLCD_DisplayChar(invader.y, invader.x, 1, ' ');
+				
+				invader.score = invader.score + 1;
+				
+				gameStatus = 0;
+			}
 		}
 	}
 }
@@ -116,40 +138,25 @@ void invaderMovement(void *arg) {
 void kingMovement(void *arg) {
 	uint16_t move = -1;
 	
-	//Populate border on right side
-	for(uint8_t border = 1; border <= MAX_ROW_LCD; border++) {
-		GLCD_DisplayChar(border, MAX_COL_LCD, 1, '|');
-	}
-	
 	while(1) {
-		if(king.player == 1) {
-			GLCD_DisplayString(0, 12, 1, "P1 -");
+		while(gameStatus){
+			if(king.y == 1) {
+				move = 1;
+			}
+			else if(king.y == MAX_ROW_LCD) {
+				move = -1;
+			}
+			
+			//Clear old position
+			GLCD_DisplayChar(king.y, MAX_COL_LCD, 1, '|');
+			
+			king.y = king.y + move;
+			
+			//Move King up and down right side of screen at constant speed
+			GLCD_DisplayChar(king.y, MAX_COL_LCD, 1, 'K');
+		
+			osDelay(100);
 		}
-		else {
-			GLCD_DisplayString(0, 12, 1, "P2 -");
-		}
-		
-		char num [8];
-		sprintf(num, "%d", king.score);
-		GLCD_DisplayString(0, 17, 1, num);
-		
-		
-		if(king.y == 1) {
-			move = 1;
-		}
-		else if(king.y == MAX_ROW_LCD) {
-			move = -1;
-		}
-		
-		//Clear old position
-		GLCD_DisplayChar(king.y, MAX_COL_LCD, 1, '|');
-		
-		king.y = king.y + move;
-		
-		//Move King up and down right side of screen at constant speed
-		GLCD_DisplayChar(king.y, MAX_COL_LCD, 1, 'K');
-	
-		osDelay(100);
 	}
 }
 
@@ -161,31 +168,33 @@ void kingReload(void *arg) {
 	LPC_GPIO2->FIODIR |= 0x0000007C;
 
 	while(1){
-		osDelay(100);
-		osMutexAcquire(reloading, osWaitForever);
-		LPC_GPIO1->FIOCLR |= 0xB0000000;
-		LPC_GPIO2->FIOCLR |= 0x0000007C;
+		while(gameStatus) {
+			osDelay(100);
+			osMutexAcquire(reloading, osWaitForever);
+			LPC_GPIO1->FIOCLR |= 0xB0000000;
+			LPC_GPIO2->FIOCLR |= 0x0000007C;
 
-		for(uint8_t led = 0; led<8; led++) {
-			//Turn LED On GPIO1
-			if(led == 5) {
-				LPC_GPIO1->FIOSET |= (1<<31);
-			}
-			else if(led==6) {
-				LPC_GPIO1->FIOSET |= (1<<29);
-			}
-			else if(led==7) {
-				LPC_GPIO1->FIOSET |= (1<<28);
-			}
+			for(uint8_t led = 0; led<8; led++) {
+				//Turn LED On GPIO1
+				if(led == 5) {
+					LPC_GPIO1->FIOSET |= (1<<31);
+				}
+				else if(led==6) {
+					LPC_GPIO1->FIOSET |= (1<<29);
+				}
+				else if(led==7) {
+					LPC_GPIO1->FIOSET |= (1<<28);
+				}
 
-			//Turn LED On GPIO2
-			else {
-				LPC_GPIO2->FIOSET |= (1<<6-led);
-			}
+				//Turn LED On GPIO2
+				else {
+					LPC_GPIO2->FIOSET |= (1<<6-led);
+				}
 
-			osDelay(200);
+				osDelay(200);
+			}
+			osMutexRelease(reloading);
 		}
-		osMutexRelease(reloading);
 	}
 }
 
@@ -194,33 +203,36 @@ void shot(uint16_t y) {
 	
 	GLCD_DisplayChar(y, MAX_COL_LCD, 1, '|');
 	
-	for(int16_t position = MAX_COL_LCD-1;position>=0; position--) {
+	uint16_t laserTime = 1000;
+	int16_t currentTime = 0;
+	
+	for(int16_t position = MAX_COL_LCD-1;position>=0 && gameStatus; position--) {
 		
 		//Invader hit
 		if(position <= invader.x && y == invader.y) {
 			GLCD_DisplayChar(invader.y, invader.x, 1, ' ');
-			invader.x = 0;
-			invader.y = MAX_ROW_LCD/2 + 1;
 			king.score = king.score + 1;
+			gameStatus = 0;
+		} else {
+			GLCD_DisplayChar(y, position, 1, '-');
+			osDelay(50);
 		}
 		
-		GLCD_DisplayChar(y, position, 1, '-');
-		osDelay(50);
-		
-		printf("%d\n", position);
+		//printf("%d\n", position);
 	}
 	
-	//Invader hit in after effect of beam
-	if(y == invader.y) {
-			GLCD_DisplayChar(invader.y, invader.x, 1, ' ');
-			invader.x = 0;
-			invader.y = MAX_ROW_LCD/2 + 1;
-			king.score = king.score + 1;
-		
-		switchPlayers();
+	while(currentTime < laserTime && gameStatus) {
+		currentTime++;
+		//Invader hit in after effect of beam
+		if(y == invader.y && gameStatus) {
+				GLCD_DisplayChar(invader.y, invader.x, 1, ' ');
+				invader.x = 0;
+				invader.y = MAX_ROW_LCD/2 + 1;
+				king.score = king.score + 1;
+				gameStatus = 0;
+		}
+		osDelay(1);
 	}
-	osDelay(1000);
-	
 	for(int16_t beam = 0; beam < MAX_COL_LCD; beam++) {
 		GLCD_DisplayChar(y, beam, 1, ' ');
 	}
@@ -229,15 +241,17 @@ void shot(uint16_t y) {
 //Task Regulating the King's shot
 void kingShot(void *arg) {
 	while(1){
-		//osMutexAcquire(reloading, osWaitForever);
+		while(gameStatus) {
+			//osMutexAcquire(reloading, osWaitForever);
 
-		//Pushbutton pressed -- shot fired
-		//Also check if reload time is up
-		if(!(LPC_GPIO2->FIOPIN & (1<<10))) {
-			//osMutexRelease(reloading);
-			shot(king.y);
+			//Pushbutton pressed -- shot fired
+			//Also check if reload time is up
+			if(!(LPC_GPIO2->FIOPIN & (1<<10))) {
+				//osMutexRelease(reloading);
+				shot(king.y);
+			}
+			while(!(LPC_GPIO2->FIOPIN & (1<<10))){}
 		}
-		while(!(LPC_GPIO2->FIOPIN & (1<<10))){}
 	}
 }
 
@@ -284,15 +298,15 @@ int main(void){
 	GLCD_SetBackColor(Black);
 	GLCD_SetTextColor(Green);
 	
-	gameStatus = true;
-	reloading = false;
+	gameStatus = 1;
+	reloading = 0;
 	
-	invader.player = 1;
+	invader.player = 2;
 	invader.score = 0;
 	invader.x = 0;
 	invader.y = MAX_ROW_LCD/2 + 1;
 	
-	king.player = 2;
+	king.player = 1;
 	king.score = 0;
 	king.x = MAX_COL_LCD;
 	king.y = MAX_ROW_LCD/2 + 1;
@@ -304,7 +318,7 @@ int main(void){
 	osThreadNew(kingMovement, NULL, NULL);
 	osThreadNew(kingReload, NULL, NULL);
 	osThreadNew(kingShot, NULL, NULL);
-	//osThreadNew(display, NULL, NULL);
+	osThreadNew(switchPlayers, NULL, NULL);
 	osKernelStart();
 	for( ; ; ) {}
 }
