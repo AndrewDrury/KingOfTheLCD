@@ -38,13 +38,17 @@ void switchPlayers(void *arg) {
 	while(1) {
 		if(gameStatus == 0) {
 			GLCD_Clear(Black);
+			GLCD_DisplayString(5, 2, 1, "SWITCH CONTROLS");
 			
-			printf("Before Switch invader: %d, king: %d\n", invader.score, king.score);
+			//Clear the beam line
+			for(int16_t beam = 0; beam < MAX_COL_LCD; beam++) {
+				GLCD_DisplayChar(invader.y, beam, 1, ' ');
+			}
+			
+			//Switch player scores
 			uint16_t invaderScore = invader.score;
 			invader.score = king.score;
 			king.score = invaderScore;
-			
-			printf("After Switch invader: %d, king: %d\n", invader.score, king.score);
 			
 			if(invader.player == 1) {
 				invader.player = 2;
@@ -78,6 +82,10 @@ void switchPlayers(void *arg) {
 				GLCD_DisplayChar(border, MAX_COL_LCD, 1, '|');
 			}
 			osDelay(1000);
+			
+			//Clear SWITCH CONTROLS line
+			GLCD_DisplayString(5, 2, 1, "               ");
+			
 			gameStatus = 1;
 			printf("Reached -- \n");
 		}
@@ -136,10 +144,24 @@ void invaderMovement(void *arg) {
 
 //Task Regulating the King's movement
 void kingMovement(void *arg) {
+	
+	//Potentiometer setup
+	LPC_PINCON->PINSEL1 &= ~(0x03<<18);
+	LPC_PINCON->PINSEL1 |= (0x01<<18);
+	LPC_SC->PCONP |= 0x00001000;
+	LPC_ADC->ADCR = (1<<2)|(4<<8)|(1<<21);
+	LPC_ADC->ADCR |= (1<<24);
+	
 	uint16_t move = -1;
 	
 	while(1) {
 		while(gameStatus){
+			/*if (LPC_ADC->ADGDR & 0x80000000) {
+				printf("in pot!\n");
+				printf("%d\n", (LPC_ADC->ADGDR & (0x0FFF<<4)) >> 4);
+				LPC_ADC->ADCR |= (1<<24);
+			}*/
+			
 			if(king.y == 1) {
 				move = 1;
 			}
@@ -155,7 +177,16 @@ void kingMovement(void *arg) {
 			//Move King up and down right side of screen at constant speed
 			GLCD_DisplayChar(king.y, MAX_COL_LCD, 1, 'K');
 		
-			osDelay(100);
+			int16_t ticks = 100;
+			
+			//Get tick delay from potentiometer
+			if (LPC_ADC->ADGDR & 0x80000000) {
+				int16_t pot = (LPC_ADC->ADGDR & (0x0FFF<<4)) >> 4;
+				ticks = 200 * pot/4096 + 50;
+				LPC_ADC->ADCR |= (1<<24);
+			}
+			
+			osDelay(ticks);
 		}
 	}
 }
@@ -203,7 +234,7 @@ void shot(uint16_t y) {
 	
 	GLCD_DisplayChar(y, MAX_COL_LCD, 1, '|');
 	
-	uint16_t laserTime = 1000;
+	uint16_t laserTime = 750;
 	int16_t currentTime = 0;
 	
 	for(int16_t position = MAX_COL_LCD-1;position>=0 && gameStatus; position--) {
