@@ -28,7 +28,7 @@ Player king;
 uint8_t gameStatus;
 
 //Reload status for King's shooting
-osMutexId_t reloading;
+uint16_t reloading;
 
 //Screen boundaries => 320x240 pixels
 const uint16_t WIDTH_PX = 319;
@@ -87,7 +87,6 @@ void switchPlayers(void *arg) {
 			GLCD_DisplayString(5, 2, 1, "               ");
 			
 			gameStatus = 1;
-			printf("Reached -- \n");
 		}
 	}
 }
@@ -200,41 +199,40 @@ void kingReload(void *arg) {
 
 	while(1){
 		while(gameStatus) {
-			osDelay(100);
-			osMutexAcquire(reloading, osWaitForever);
-			LPC_GPIO1->FIOCLR |= 0xB0000000;
-			LPC_GPIO2->FIOCLR |= 0x0000007C;
-
-			for(uint8_t led = 0; led<8; led++) {
+			for(uint8_t led = 0; led<9 && reloading == 1; led++) {
+				//Clear all LEDs
+				if(led==0){
+					LPC_GPIO1->FIOCLR |= 0xB0000000;
+					LPC_GPIO2->FIOCLR |= 0x0000007C;
+				} 
+				
 				//Turn LED On GPIO1
-				if(led == 5) {
+				else if(led == 6) {
 					LPC_GPIO1->FIOSET |= (1<<31);
 				}
-				else if(led==6) {
+				else if(led==7) {
 					LPC_GPIO1->FIOSET |= (1<<29);
 				}
-				else if(led==7) {
+				else if(led==8) {
 					LPC_GPIO1->FIOSET |= (1<<28);
 				}
 
 				//Turn LED On GPIO2
 				else {
-					LPC_GPIO2->FIOSET |= (1<<6-led);
+					LPC_GPIO2->FIOSET |= (1<<7-led);
 				}
 
-				osDelay(200);
+				osDelay(400);
 			}
-			osMutexRelease(reloading);
+			reloading = 0;
 		}
 	}
 }
 
 void shot(uint16_t y) {
-	printf("SHOT FIRED\n");
-	
 	GLCD_DisplayChar(y, MAX_COL_LCD, 1, '|');
 	
-	uint16_t laserTime = 750;
+	uint16_t laserTime = 400;
 	int16_t currentTime = 0;
 	
 	for(int16_t position = MAX_COL_LCD-1;position>=0 && gameStatus; position--) {
@@ -273,12 +271,11 @@ void shot(uint16_t y) {
 void kingShot(void *arg) {
 	while(1){
 		while(gameStatus) {
-			//osMutexAcquire(reloading, osWaitForever);
 
 			//Pushbutton pressed -- shot fired
 			//Also check if reload time is up
-			if(!(LPC_GPIO2->FIOPIN & (1<<10))) {
-				//osMutexRelease(reloading);
+			if(!(LPC_GPIO2->FIOPIN & (1<<10)) && reloading == 0) {
+				reloading = 1;
 				shot(king.y);
 			}
 			while(!(LPC_GPIO2->FIOPIN & (1<<10))){}
@@ -330,7 +327,7 @@ int main(void){
 	GLCD_SetTextColor(Green);
 	
 	gameStatus = 1;
-	reloading = 0;
+	reloading = 1;
 	
 	invader.player = 2;
 	invader.score = 0;
@@ -353,24 +350,3 @@ int main(void){
 	osKernelStart();
 	for( ; ; ) {}
 }
-
-
-
-//Additional Potentiometer code if needed
-/*
-void potentiometer(void const *arg) {
-	LPC_PINCON->PINSEL1 &= ~(0x03<<18);
-	LPC_PINCON->PINSEL1 |= (0x01<<18);
-	LPC_SC->PCONP |= 0x00001000;
-	LPC_ADC->ADCR = (1<<2)|(4<<8)|(1<<21);
-	LPC_ADC->ADCR |= (1<<24);
-	
-	while(1)
-	{
-		if (LPC_ADC->ADGDR & 0x80000000) {
-			printf("%d\n", (LPC_ADC->ADGDR & (0x0FFF<<4)) >> 4);
-			LPC_ADC->ADCR |= (1<<24);
-		}
-	}
-}
-*/
