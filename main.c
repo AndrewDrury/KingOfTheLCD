@@ -67,24 +67,16 @@ int8_t invaderWin;
 //Reload status for King's shooting
 int16_t reloading;
 
-/*
-TODO
-- Bitmap
-- Glitching
-
-- Reload with mutexes instead
-*/
-
 void switchPlayers(void *arg) {
 	while(1) {
 		if(gameStatus == 0) {
 			if(invaderWin) {
-				GLCD_Clear(Green);
+				GLCD_Clear(Navy);
 				GLCD_Clear(White);
 				invader.score = invader.score + 1;
 			}
 			else {
-				GLCD_Clear(Red);
+				GLCD_Clear(Navy);
 				GLCD_Clear(White);
 				king.score = king.score + 1;
 			}
@@ -92,7 +84,8 @@ void switchPlayers(void *arg) {
 			if(invader.score > 0 | king.score > 0)
 			{	
 				GLCD_DisplayString(4, 2, 1, "SWITCH CONTROLS");
-				while((LPC_GPIO2->FIOPIN & (1<<10))){}
+				while((LPC_GPIO2->FIOPIN & (1<<10)))
+				{}
 				GLCD_Clear(White);	
 			}
 			
@@ -136,8 +129,6 @@ void switchPlayers(void *arg) {
 			
 			//Clear SWITCH CONTROLS line
 			GLCD_DisplayString(5, 2, 1, "               ");
-			
-			//GLCD_Bitmap(50, 50, 16, 24, kingSprite);
 			
 			gameStatus = 1;
 		}
@@ -393,14 +384,35 @@ int main(void){
 	
 	//Start four threads
 	osKernelInitialize();
-	
-	GLCD_DisplayString(4, 2, 1, "King of the LCD");
-	//(unsigned int x,  unsigned int y, unsigned int w, unsigned int h, unsigned char *bitmap);
-	//GLCD_Bitmap(0,0,50,50,(unsigned char*)testReal);
-	//GLCD_Bitmap(75,0,25,25,(unsigned char*)testReal);
-	//GLCD_Bitmap(100,100,100,100,(unsigned char*)testReal);
+
+	GLCD_DisplayString(4, 3, 1, "King of the LCD");
 	while((LPC_GPIO2->FIOPIN & (1<<10))){}
-	
+	GLCD_Clear(White);
+	osDelay(200);
+		
+	GLCD_DisplayString(1, 6, 1, "Player 1");
+	GLCD_DisplayString(3, 1, 1, "Use the joystick");
+	GLCD_DisplayString(5, 1, 1, "Get the invader");
+	GLCD_DisplayString(6, 1, 1, "across the");
+	GLCD_DisplayString(7, 1, 1, "battlefield");
+	GLCD_DisplayString(8, 1, 1, "to the castle");
+	osDelay(200);	
+	while((LPC_GPIO2->FIOPIN & (1<<10))){}
+	GLCD_Clear(White);
+  osDelay(200);
+		
+	GLCD_DisplayString(1, 6, 1, "Player 2");
+	GLCD_DisplayString(3, 1, 1, "Use the button");
+	GLCD_DisplayString(5, 1, 1, "Shoot the invader");	
+	GLCD_DisplayString(6, 1, 1, "with a volley");	
+	GLCD_DisplayString(7, 1, 1, "of arrows");		
+	osDelay(200);	
+	while((LPC_GPIO2->FIOPIN & (1<<10))){}
+		
+	GLCD_Clear(White);
+	GLCD_SetBackColor(White);
+	GLCD_SetTextColor(Black);
+		
 	osThreadNew(invaderMovement, NULL, NULL);
 	osThreadNew(kingMovement, NULL, NULL);
 	osThreadNew(kingReload, NULL, NULL);
