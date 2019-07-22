@@ -9,11 +9,12 @@
 
 #define MAX_ROW_LCD 9 //Max number of Rows for LCD
 #define MAX_COL_LCD 19 //Max number of Columns for LCD
+
 //Screen boundaries => 320x240 pixels
 #define WIDTH_PX 319
 #define HEIGHT_PX 239
 
-//16x24
+//16x24 sprite of the King character
 unsigned short kingSprite[] ={
 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFDF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,   // 0x0010 (16) pixels
 0xFFDF, 0xFFFF, 0xFFDF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0x18C3, 0x0862, 0xFFFF, 0xFFDF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFDF,   // 0x0020 (32) pixels
@@ -41,51 +42,53 @@ unsigned short kingSprite[] ={
 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFD, 0xFFDB, 0xFFDA, 0xFFDB, 0xFFFE, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,   // 0x0180 (384) pixels
 };
 
-//16x1
+//16x1 sprite of a laser
 unsigned short thinLaser[] ={
 0xFFFF, 0xFFFF, 0xFFFF, 0xFFDF, 0xFFFF, 0xFEFB, 0x8041, 0xB8A3, 0xB8A3, 0x9062, 0xF576, 0xFF9E, 0xFFDF, 0xFFFF, 0xFFFF, 0xFFFF,   // 0x0010 (16) pixels
 };
 
 //Global Variables
+
 //Invader Position
 struct player {
 	int16_t player; //Status to track if player 1 or 2 is controlling character
-	int16_t score;
-	int16_t x;
-	int16_t y;
+	int16_t score; //Player's current score
+	int16_t x; //Player's current horizontal position
+	int16_t y; //Player's current vertical position
 };
-
 typedef struct player Player;
 
+//Declare two Player characters, the invader and the king
 Player invader;
 Player king;
 
-//Game status, (play/stop)
-int8_t gameStatus;
-int8_t invaderWin;
+int16_t gameStatus; //Game status, (play/stop)
+int16_t invaderWin; //Invader winning status, (win/loss)
+int16_t reloading; //Reload status for the King's shooting
 
-//Reload status for King's shooting
-int16_t reloading;
-
+//Switching players task, ran whenever the players switch positions
 void switchPlayers(void *arg) {
 	while(1) {
+		//Wait until the gameStatus is 1, which indicates a stoppage and a switch
 		if(gameStatus == 0) {
+			GLCD_Clear(Navy);
+			GLCD_Clear(White);
+				
+			//Increment the winner's score
 			if(invaderWin) {
-				GLCD_Clear(Navy);
-				GLCD_Clear(White);
 				invader.score = invader.score + 1;
 			}
 			else {
-				GLCD_Clear(Navy);
-				GLCD_Clear(White);
 				king.score = king.score + 1;
 			}
 			
-			if(invader.score > 0 | king.score > 0)
+			//If this is not the first time the game is run, display SWITCH CONTROLS
+			if(invader.score > 0 || king.score > 0)
 			{	
 				GLCD_DisplayString(4, 2, 1, "SWITCH CONTROLS");
-				while((LPC_GPIO2->FIOPIN & (1<<10)))
-				{}
+				
+				//Wait for pushbutton
+				while((LPC_GPIO2->FIOPIN & (1<<10))){}
 				GLCD_Clear(White);	
 			}
 			
@@ -103,9 +106,11 @@ void switchPlayers(void *arg) {
 				king.player = 2;
 			}
 			
+			//Reset the invader's position
 			invader.x = 0;
 			invader.y = MAX_ROW_LCD/2 + 1;
 			
+			//Display the players's score at the top of the LCD
 			if(invader.player == 1) {
 				GLCD_DisplayString(0, 0, 1, "P1 -");
 				GLCD_DisplayString(0, 12, 1, "P2 -");
@@ -121,10 +126,11 @@ void switchPlayers(void *arg) {
 			sprintf(num, "%d", king.score);
 			GLCD_DisplayString(0, 17, 1, num);
 			
-			//Populate border on right side
+			//Populate the King's border on the right side of the screen
 			for(uint8_t border = 1; border <= MAX_ROW_LCD; border++) {
 				GLCD_DisplayChar(border, MAX_COL_LCD, 1, '|');
 			}
+			
 			osDelay(1000);
 			
 			//Clear SWITCH CONTROLS line
@@ -145,6 +151,7 @@ void invaderMovement(void *arg) {
 	gameStatus = 0;
 	
 	while(1){
+		//Run the loop while the game is in play
 		while(gameStatus) {
 			//Clear prev space
 			prevX = invader.y;
@@ -173,14 +180,11 @@ void invaderMovement(void *arg) {
 				GLCD_DisplayChar(invader.y, invader.x, 1, ' '); //Clear invader's position
 				invader.x = invader.x-1;
 			}
-
+			
+			//Display the invader at updated position
 			GLCD_DisplayChar(invader.y, invader.x, 1, graphic);
-
-			//Joystick pressed
-			if (!(LPC_GPIO1->FIOPIN & (1<<20))) {
-
-			}
-
+			
+			//Small delay slows down each loop
 			osDelay(100);
 
 			//Check if invader hit right border (game won)
@@ -189,17 +193,17 @@ void invaderMovement(void *arg) {
 				gameStatus = 0;
 				invaderWin = 1;
 			}
+			
+			//Clear the invader's previous location (since redrawing the invader during the next loop)
 			GLCD_SetTextColor(White);
 			GLCD_DisplayChar(prevY, prevX, 1, ' ');
 			GLCD_SetTextColor(Black);
-			
 		}
 	}
 }
 
 //Task Regulating the King's movement
 void kingMovement(void *arg) {
-	
 	//Potentiometer setup
 	LPC_PINCON->PINSEL1 &= ~(0x03<<18);
 	LPC_PINCON->PINSEL1 |= (0x01<<18);
@@ -207,21 +211,19 @@ void kingMovement(void *arg) {
 	LPC_ADC->ADCR = (1<<2)|(4<<8)|(1<<21);
 	LPC_ADC->ADCR |= (1<<24);
 	
+	//Define a variable which tracks direction of King's movement, (-1 = UP, 1 = DOWN)
 	int16_t move = -1;
-	
-	float previous_time;
-	float time = timer_read()/1E6;
-	float delta_time = time - previous_time;
-	previous_time = time;
-	
+	//Store all possible pixel locations (in y-direction) for the King to be in
 	int16_t kingYPos[] = {0,24,48,72,96,120,144,168,192,216};
 	
 	while(1) {
+		//Run the loop while the game is in play
 		while(gameStatus){
-			
+			//Once the King reaches row 1, start moving downwards
 			if(king.y == 1) {
 				move = 1;
 			}
+			//If the King is at the last row, start moving upwards
 			else if(king.y == MAX_ROW_LCD) {
 				move = -1;
 			}
@@ -229,31 +231,26 @@ void kingMovement(void *arg) {
 			//Clear old position
 			GLCD_DisplayChar(king.y, MAX_COL_LCD, 1, '|');
 			
+			//Move the king's position
 			king.y = king.y + move;
-			printf("%d \n", king.y);
 			
-			
-			//Move King up and down right side of screen at constant speed
-			//GLCD_DisplayChar(king.y, MAX_COL_LCD, 1, 'K');
-			
+			//Display the King's sprite at the new location
 			GLCD_Bitmap(WIDTH_PX-16,kingYPos[king.y],16,24,(unsigned char*)kingSprite);
 		
+			//Define a variable which will be the delay for each loop
 			int16_t ticks = 100;
 			
-			//Get tick delay from potentiometer
+			//Get an updated tick delay from the potentiometer, turning the potentiometer will speed up or slow down the King
 			if (LPC_ADC->ADGDR & 0x80000000) {
 				int16_t pot = (LPC_ADC->ADGDR & (0x0FFF<<4)) >> 4;
 				ticks = 200 * pot/4096 + 50;
 				LPC_ADC->ADCR |= (1<<24);
 			}
 			
+			//Delay the loop
 			osDelay(ticks);
 			
-			
-			//time = timer_read()/1E6;
-			//while(timer_read()/1E6 < time+0.2){}
-			
-			//Set the border
+			//Redraw the border
 			for(uint16_t kingY = 1; kingY < 10; kingY++) {
 				GLCD_DisplayChar(kingY, MAX_COL_LCD, 1, '|');
 			}
@@ -272,9 +269,10 @@ void kingReload(void *arg) {
 	LPC_GPIO1->FIOSET |= 0xB0000000;
 	LPC_GPIO2->FIOSET |= 0x0000007C;
 	
-
 	while(1){
+		//Run the loop while the game is in play
 		while(gameStatus) {
+			//Incrementally turn on each LEDs, until all LEDs are on (reloading period)
 			for(uint8_t led = 0; led<9 && reloading == 1; led++) {
 				//Clear all LEDs
 				if(led==0){
@@ -282,7 +280,7 @@ void kingReload(void *arg) {
 					LPC_GPIO2->FIOCLR |= 0x0000007C;
 				}
 				
-				//Turn LED On GPIO1
+				//Turn LEDs On GPIO1
 				else if(led == 6) {
 					LPC_GPIO1->FIOSET |= (1<<31);
 				}
@@ -293,36 +291,44 @@ void kingReload(void *arg) {
 					LPC_GPIO1->FIOSET |= (1<<28);
 				}
 
-				//Turn LED On GPIO2
+				//Turn LEDs On GPIO2
 				else {
 					LPC_GPIO2->FIOSET |= (1<<7-led);
 				}
-
+				
+				//Delay between each LED turning on
 				osDelay(225);
 			}
+			//The king can now shoot, set reloading status to 0
 			reloading = 0;
 		}
 	}
 }
 
+//A shot that is fired by the King
 void shot(uint16_t y) {
+	//Replace the King's sprite with the border
 	GLCD_DisplayChar(y, MAX_COL_LCD, 1, '|');
 	
+	//Move the volley of arrows across the screen, from right to left, checking that the game is still in play
 	for(int16_t position = MAX_COL_LCD-1;position>=0 && gameStatus; position--) {
 		//Shoot a row of shots
 		for(uint16_t shotRow = 1; shotRow<=MAX_ROW_LCD; shotRow++) {
+			//If the invader is hit, the King wins and the game is stopped
 			if(position == invader.x && y != invader.y) {
 				GLCD_DisplayChar(invader.y, invader.x, 1, ' ');
 				invaderWin = 0;
 				gameStatus = 0;
 			}
+			//Otherwise draw the shot on the screen (as long as it isn't in the original location of the King)
 			else if(shotRow != y) {
 				GLCD_DisplayChar(shotRow, position, 1, '|');
 			}
 		}
+		//Small delay slows down the speed of the shot
 		osDelay(75);
 		
-		//Clear shot row and prev row
+		//Clear the shot row and the prev row
 		GLCD_SetTextColor(White);
 		for(uint16_t shotRow = 1; shotRow<=MAX_ROW_LCD; shotRow++) {
 			if(shotRow != y) {
@@ -346,10 +352,9 @@ void shot(uint16_t y) {
 void kingShot(void *arg) {
 	float time = timer_read()/1E6;
 	while(1){
+		//Run the loop while the game is in play
 		while(gameStatus) {
-
-			//Pushbutton pressed -- shot fired
-			//Also check if reload time is up
+			//Pushbutton pressed -- shot fired if reload time is up (reloading status is 0)
 			if(!(LPC_GPIO2->FIOPIN & (1<<10)) && reloading == 0) {
 				reloading = 1;
 				shot(king.y);
@@ -357,39 +362,44 @@ void kingShot(void *arg) {
 		}
 	}
 }
-			
+
 int main(void){
 	printf("Start of King of the LCD\n");
 
 	timer_setup();
 	
+	//Setup the GLCD
 	GLCD_Init();
 	GLCD_Clear(White);
 	GLCD_SetBackColor(White);
 	GLCD_SetTextColor(Black);
 	
+	//Set all the initial values
 	gameStatus = 1;
 	reloading = 0;
 	invaderWin =1;
 	
+	//Set the invader's initial values
 	invader.player = 2;
 	invader.score = -1;
 	invader.x = 0;
 	invader.y = MAX_ROW_LCD/2 + 1;
 	
+	//Set the king's initial values
 	king.player = 1;
 	king.score = 0;
 	king.x = MAX_COL_LCD;
 	king.y = MAX_ROW_LCD/2 + 1;
 	
-	//Start four threads
 	osKernelInitialize();
 
+	//Display an intro to the game, explaining the controls
 	GLCD_DisplayString(4, 3, 1, "King of the LCD");
 	while((LPC_GPIO2->FIOPIN & (1<<10))){}
 	GLCD_Clear(White);
 	osDelay(200);
-		
+
+	//Explain Player 1's instructions
 	GLCD_DisplayString(1, 6, 1, "Player 1");
 	GLCD_DisplayString(3, 1, 1, "Use the joystick");
 	GLCD_DisplayString(5, 1, 1, "Get the invader");
@@ -400,7 +410,8 @@ int main(void){
 	while((LPC_GPIO2->FIOPIN & (1<<10))){}
 	GLCD_Clear(White);
   osDelay(200);
-		
+	
+	//Explain Player 2's instructions
 	GLCD_DisplayString(1, 6, 1, "Player 2");
 	GLCD_DisplayString(3, 1, 1, "Use the button");
 	GLCD_DisplayString(5, 1, 1, "Shoot the invader");	
@@ -413,6 +424,7 @@ int main(void){
 	GLCD_SetBackColor(White);
 	GLCD_SetTextColor(Black);
 		
+	//Start four threads
 	osThreadNew(invaderMovement, NULL, NULL);
 	osThreadNew(kingMovement, NULL, NULL);
 	osThreadNew(kingReload, NULL, NULL);
