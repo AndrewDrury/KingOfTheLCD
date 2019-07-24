@@ -1,3 +1,8 @@
+//MTE 241 - Lab 5 - Creating your own game
+//Game name: King of the LCD
+//Group 20
+//All code written by Andrew Drury and Dominic Tung
+
 #include <lpc17xx.h>
 #include "stdio.h"
 #include "uart.h"
@@ -154,7 +159,7 @@ void invaderMovement(void *arg) {
 		//Run the loop while the game is in play
 		while(gameStatus) {
 			//Clear prev space
-			prevX = invader.y;
+			prevY = invader.y;
 			prevX = invader.x;
 			
 			//Joystick Up
@@ -180,13 +185,14 @@ void invaderMovement(void *arg) {
 				GLCD_DisplayChar(invader.y, invader.x, 1, ' '); //Clear invader's position
 				invader.x = invader.x-1;
 			}
+			GLCD_DisplayChar(prevY, prevX, 1, ' ');
 			
 			//Display the invader at updated position
 			GLCD_DisplayChar(invader.y, invader.x, 1, graphic);
 			
 			//Small delay slows down each loop
 			osDelay(100);
-
+			
 			//Check if invader hit right border (game won)
 			if(invader.x == MAX_COL_LCD) {
 				GLCD_DisplayChar(invader.y, invader.x, 1, ' ');
@@ -243,7 +249,7 @@ void kingMovement(void *arg) {
 			//Get an updated tick delay from the potentiometer, turning the potentiometer will speed up or slow down the King
 			if (LPC_ADC->ADGDR & 0x80000000) {
 				int16_t pot = (LPC_ADC->ADGDR & (0x0FFF<<4)) >> 4;
-				ticks = 200 * pot/4096 + 50;
+				ticks = 250 * pot/4096 + 250;
 				LPC_ADC->ADCR |= (1<<24);
 			}
 			
